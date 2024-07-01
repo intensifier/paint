@@ -15,31 +15,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '14.x'
+          node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --config vite-publish.config.js
+
+      - name: Copy index.js
+        run: npx ncp dist/dist/elements/out/index.mjs dist/dist/elements/index.js
 
       - name: Delete irrelevant files
-        run: npx rimraf build/assets build/*.* build/dist/index.js
+        run: npx rimraf dist/dist/elements/out
 
       - name: Copy custom-elements.json
-        run: npx ncp custom-elements.json build/custom-elements.json
+        run: npx ncp custom-elements.json dist/custom-elements.json
 
       - name: Copy package.json
-        run: npx ncp package-publish.json build/package.json
+        run: npx ncp package-publish.json dist/package.json
 
       - name: Copy README.md
-        run: npx ncp README.md build/README.md
+        run: npx ncp README.md dist/README.md
 
       - name: Replace version in package.json
-        run: npx replace '#.#.#' ${GITHUB_REF#refs/tags/v} build/package.json
+        run: npx replace '#.#.#' ${GITHUB_REF#refs/tags/v} dist/package.json
 
       - name: Publish
-        run: npm publish ./build --access=public
+        run: npm publish ./dist --access=public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
