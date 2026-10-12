@@ -58,14 +58,15 @@ export class ToolBox extends LitElement {
   render(): TemplateResult {
     return html`
       ${tools.map(
-        (tool) => html` <paint-tool
-          .tool=${tool}
-          title="${tool.tooltip}"
-          class="${this.drawingContext?.tool === tool
-            ? 'active'
-            : ''} ${tool.instance ? '' : 'unavailable'}"
-          @click="${() => this.selectTool(tool)}"
-        ></paint-tool>`,
+        (tool) =>
+          html` <paint-tool
+            .tool=${tool}
+            title="${tool.tooltip}"
+            class="${this.drawingContext?.tool === tool
+              ? 'active'
+              : ''} ${tool.instance ? '' : 'unavailable'}"
+            @click="${() => this.selectTool(tool)}"
+          ></paint-tool>`,
       )}
       <paint-inset-container>
         ${this.getToolHtml(this.drawingContext.tool)}
@@ -81,7 +82,16 @@ export class ToolBox extends LitElement {
       this.drawingContext.previousEditingTool = this.drawingContext.tool;
     }
 
-    this.drawingContext.tool = tool;
+    // Special case: Clicking pick color or magnifier twice resets to previous editing tool.
+    if (
+      this.drawingContext.tool === tool &&
+      [PICK_COLOR, MAGNIFIER].includes(tool)
+    ) {
+      this.drawingContext.tool = this.drawingContext.previousEditingTool;
+    } else {
+      this.drawingContext.tool = tool;
+    }
+
     updateContext(this);
   }
 
@@ -143,7 +153,9 @@ export class ToolBox extends LitElement {
     }
 
     if (MAGNIFIER === tool) {
-      return html`TBD`;
+      return html` <paint-tool-magnifier-size
+        .drawingContext="${this.drawingContext}"
+      ></paint-tool-magnifier-size>`;
     }
 
     return '';

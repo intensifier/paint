@@ -31,6 +31,12 @@ export interface DrawingContext {
    */
   previousMagnifierSize: number;
 
+  /*
+   * Defines if the grid should be shown. Only applied when the zoom level is
+   * greater than or equal to 400%.
+   */
+  showGrid: boolean;
+
   /**
    * Contains the size of the Airbrush tool.
    */
@@ -46,6 +52,11 @@ export interface DrawingContext {
    * Contains the colors of the color palette in hex (e.g., #abcdef).
    */
   palette: string[];
+
+  /**
+   * Contains the index of the last clicked color in the palette.
+   */
+  selectedPaletteIndex: number;
 
   /**
    * Contains the hovered color when the Pick Color is used.

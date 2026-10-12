@@ -1,16 +1,59 @@
 import { css, CSSResultGroup, html, LitElement, TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { DRAWING_CONTEXT } from '../data/drawing-context';
 import { updateContext } from '../helpers/update-context';
 
 @customElement('paint-color-picker')
 export class ColorPicker extends LitElement {
   @property() drawingContext = DRAWING_CONTEXT;
-  @property() color = '';
+  @property({ type: Number }) index = 0;
+
+  @query('input') colorInput!: HTMLInputElement;
+
+  connectedCallback() {
+    super.connectedCallback();
+
+    this.addEventListener('click', () => {
+      this.dispatchColorEvent('primary');
+    });
+    this.addEventListener('contextmenu', (event) => {
+      this.dispatchColorEvent('secondary');
+      event.preventDefault();
+    });
+    this.addEventListener('dblclick', () => {
+      this.openColorPicker();
+    });
+
+    this.drawingContext.element?.addEventListener(
+      'edit-color',
+      this.onEditColor,
+    );
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    this.drawingContext.element?.removeEventListener(
+      'edit-color',
+      this.onEditColor,
+    );
+  }
+
+  private readonly onEditColor = () => {
+    const selectedPaletteIndex = this.drawingContext.selectedPaletteIndex;
+    if (this.index === selectedPaletteIndex) {
+      this.openColorPicker();
+    }
+  };
+
+  get color(): string {
+    return this.drawingContext.palette[this.index];
+  }
 
   static get styles(): CSSResultGroup {
     return css`
       :host {
+        position: relative;
         border: 1px solid var(--button-light);
         border-top-color: var(--button-dark);
         border-left-color: var(--button-dark);
@@ -23,29 +66,46 @@ export class ColorPicker extends LitElement {
         border-left-color: var(--button-darker);
         height: 100%;
       }
+
+      input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        pointer-events: none;
+      }
     `;
   }
 
-  constructor() {
-    super();
-    this.addEventListener('click', () => {
-      this.dispatchColorEvent('primary');
-    });
-    this.addEventListener('contextmenu', (event) => {
-      this.dispatchColorEvent('secondary');
-      event.preventDefault();
-    });
+  openColorPicker(): void {
+    try {
+      this.colorInput.showPicker();
+    } catch {
+      this.colorInput.focus();
+      this.colorInput.click();
+    }
+  }
+
+  onChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.drawingContext.palette[this.index] = input.value;
+    this.drawingContext.colors.primary = input.value;
+    updateContext(this);
   }
 
   dispatchColorEvent(type: 'primary' | 'secondary'): void {
+    this.drawingContext.selectedPaletteIndex = this.index;
     this.drawingContext.colors[type] = this.color;
     updateContext(this);
   }
 
   render(): TemplateResult {
     return html`<div
-      class="frame"
-      style="background-color: ${this.color};"
-    ></div>`;
+        class="frame"
+        style="background-color: ${this.color};"
+      ></div>
+      <input type="color" .value="${this.color}" @change="${this.onChange}" />`;
   }
 }
